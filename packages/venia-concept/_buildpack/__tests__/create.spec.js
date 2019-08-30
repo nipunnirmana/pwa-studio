@@ -9,6 +9,7 @@ const packagesRoot = resolve(__dirname, '../../../');
 
 const MemoryFS = require('memory-fs');
 const {
+    makeCommonTasks,
     makeCopyStream
 } = require('@magento/pwa-buildpack/lib/Utilities/createProject');
 const createVenia = require('../create');
@@ -42,14 +43,17 @@ const mockFs = data => {
 };
 
 const runCreate = (fs, options) => {
-    const { after, visitor } = createVenia({ fs });
+    const { visitor } = createVenia({
+        fs,
+        tasks: makeCommonTasks(fs, options),
+        options
+    });
     return makeCopyStream({
         fs,
         options: {
             ...options,
             directory: '/target'
         },
-        after,
         visitor,
         packageRoot: '/repo/packages/me',
         directory: '/project',
@@ -125,8 +129,8 @@ test('outputs npm package.json', async () => {
 
 test('outputs package-lock or yarn.lock based on npmClient', async () => {
     const files = {
-        '/repo/packages/me/package-lock.json': '{ "for": "npm" }',
-        '/repo/packages/me/yarn.lock': '{ "for": "yarn" }'
+        '/repo/packages/me/package-lock.json.cached': '{ "for": "npm" }',
+        '/repo/packages/me/yarn.lock.cached': '{ "for": "yarn" }'
     };
     let fs = mockFs(files);
     await runCreate(fs, {

@@ -165,6 +165,8 @@ const jestConfig = {
     collectCoverageFrom: [
         // Code directories
         'packages/*/{src,lib,_buildpack}/**/*.js',
+        // Not the create-pwa package, which requires manual testing
+        '!packages/create-pwa/**/*.js',
         // Not node_modules
         '!**/node_modules/**',
         // Not __tests__, __helpers__, or __any_double_underscore_folders__

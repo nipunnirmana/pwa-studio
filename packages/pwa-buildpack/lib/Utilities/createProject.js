@@ -8,8 +8,20 @@ const gitIgnoreToGlob = require('gitignore-to-glob');
 
 const isMatch = (path, globs) => micromatch.isMatch(path, globs, { dot: true });
 
-const defaultIgnores = ['node_modules/**/*'];
+// Common handlers that a template developer might frequently use for globs,
+// provided for the developer's convenience.
+const makeCommonTasks = fs => ({
+    IGNORE: () => {},
+    COPY: ({ stats, path, targetPath }) => {
+        if (stats.isDirectory()) {
+            fs.ensureDirSync(targetPath);
+        } else {
+            fs.copyFileSync(path, targetPath);
+        }
+    }
+});
 
+const defaultIgnores = ['node_modules/**/*'];
 const getIgnores = packageRoot => {
     try {
         return (
@@ -32,8 +44,7 @@ const makeCopyStream = ({
     directory,
     options,
     ignores,
-    visitor,
-    after
+    visitor
 }) =>
     new Promise((succeed, fail) => {
         const copyGlobs = Object.keys(visitor);
@@ -73,23 +84,18 @@ const makeCopyStream = ({
                 }
             }
         });
-        copyStream.on('error', fail);
+        copyStream.on('error', () => {
+            failed = true;
+            fail();
+        });
         copyStream.on('end', () => {
-            if (after) {
-                try {
-                    after({ options });
-                    succeed();
-                } catch (e) {
-                    failed = true;
-                    fail(e);
-                }
-            } else {
+            if (!failed) {
                 succeed();
             }
         });
     });
 
-function createProject(options) {
+async function createProject(options) {
     const { template, directory } = options;
 
     const { instructions, packageRoot } = getBuildpackInstructions(template, [
@@ -97,21 +103,32 @@ function createProject(options) {
     ]);
     const {
         after,
+        before,
         visitor,
         ignores = getIgnores(packageRoot)
-    } = instructions.create({ fs: fse });
+    } = instructions.create({
+        fs: fse,
+        tasks: makeCommonTasks(fse, options),
+        options
+    });
 
-    return makeCopyStream({
+    if (before) {
+        await before({ options });
+    }
+    await makeCopyStream({
         fs: fse,
         packageRoot,
         directory,
         options,
         ignores,
-        visitor,
-        after
+        visitor
     });
+    if (after) {
+        await after({ options });
+    }
 }
 
 module.exports = createProject;
 module.exports.makeCopyStream = makeCopyStream;
+module.exports.makeCommonTasks = makeCommonTasks;
 module.exports.GITIGNORE_FILE = '.gitignore';
