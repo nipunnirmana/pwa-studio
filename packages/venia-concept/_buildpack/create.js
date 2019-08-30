@@ -144,7 +144,7 @@ function createProjectFromVenia({ fs }) {
                 } else {
                     fs.copyFileSync(path, targetPath);
                 }
-            },
+            }
         }
     };
 }

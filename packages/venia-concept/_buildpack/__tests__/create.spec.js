@@ -1,6 +1,8 @@
 jest.mock('child_process');
 const { execSync } = require('child_process');
-execSync.mockImplementation((cmd, { cwd }) => JSON.stringify([{ filename: `${cwd.split('/').pop()}.tgz`}]));
+execSync.mockImplementation((cmd, { cwd }) =>
+    JSON.stringify([{ filename: `${cwd.split('/').pop()}.tgz` }])
+);
 
 const { dirname, resolve } = require('path');
 const packagesRoot = resolve(__dirname, '../../../');
@@ -60,16 +62,22 @@ test('copies files and writes new file structure, ignoring ignores', async () =>
         '/repo/packages/me/src/index.js': 'alert("index")',
         '/repo/packages/me/src/components/Fake/Fake.js': 'alert("fake")',
         '/repo/packages/me/src/components/Fake/Fake.css': '#fake {}',
-        '/repo/packages/me/CHANGELOG.md': '#markdown',
+        '/repo/packages/me/CHANGELOG.md': '#markdown'
     });
     await runCreate(fs, {
         name: 'whee',
         author: 'me',
         npmClient: 'yarn'
     });
-    expect(fs.readFileSync('/project/src/index.js', 'utf8')).toBe('alert("index")');
-    expect(fs.readFileSync('/project/src/components/Fake/Fake.js', 'utf8')).toBe('alert("fake")');
-    expect(fs.readFileSync('/project/src/components/Fake/Fake.css', 'utf8')).toBe('#fake {}');
+    expect(fs.readFileSync('/project/src/index.js', 'utf8')).toBe(
+        'alert("index")'
+    );
+    expect(
+        fs.readFileSync('/project/src/components/Fake/Fake.js', 'utf8')
+    ).toBe('alert("fake")');
+    expect(
+        fs.readFileSync('/project/src/components/Fake/Fake.css', 'utf8')
+    ).toBe('#fake {}');
     expect(() => fs.readFileSync('/project/CHANGELOG.md', 'utf8')).toThrow();
 });
 
@@ -119,7 +127,7 @@ test('outputs package-lock or yarn.lock based on npmClient', async () => {
     const files = {
         '/repo/packages/me/package-lock.json': '{ "for": "npm" }',
         '/repo/packages/me/yarn.lock': '{ "for": "yarn" }'
-    }
+    };
     let fs = mockFs(files);
     await runCreate(fs, {
         name: 'foo',
@@ -128,7 +136,7 @@ test('outputs package-lock or yarn.lock based on npmClient', async () => {
     });
     expect(() => fs.readJsonSync('/project/package-lock.json')).toThrow();
     expect(fs.readJsonSync('/project/yarn.lock')).toMatchObject({
-        'for': 'yarn'
+        for: 'yarn'
     });
 
     fs = mockFs(files);
@@ -139,9 +147,9 @@ test('outputs package-lock or yarn.lock based on npmClient', async () => {
     });
     expect(() => fs.readJsonSync('/project/yarn.lock')).toThrow();
     expect(fs.readJsonSync('/project/package-lock.json')).toMatchObject({
-        'for': 'npm'
+        for: 'npm'
     });
-})
+});
 
 test('forces yarn client, local deps, and console debugging if DEBUG_PROJECT_CREATION is set', async () => {
     const old = process.env.DEBUG_PROJECT_CREATION;
@@ -152,7 +160,7 @@ test('forces yarn client, local deps, and console debugging if DEBUG_PROJECT_CRE
             name: 'foo',
             author: 'bar',
             dependencies: {
-                '@magento/venia-ui': "1.0.0"
+                '@magento/venia-ui': '1.0.0'
             },
             devDependencies: {
                 '@magento/peregrine': '1.0.0'
@@ -171,7 +179,7 @@ test('forces yarn client, local deps, and console debugging if DEBUG_PROJECT_CRE
         }),
         [resolve(packagesRoot, 'bad-package/package.json')]: 'bad json',
         [resolve(packagesRoot, 'some-file.txt')]: 'not a package'
-    }
+    };
 
     const fs = mockFs(files);
 
@@ -183,8 +191,8 @@ test('forces yarn client, local deps, and console debugging if DEBUG_PROJECT_CRE
     expect(fs.readJsonSync('/project/package.json')).toMatchSnapshot();
     expect(() => fs.readJsonSync('/project/package-lock.json')).toThrow();
     expect(fs.readJsonSync('/project/yarn.lock')).toMatchObject({
-        'for': 'yarn'
+        for: 'yarn'
     });
 
     process.env.DEBUG_PROJECT_CREATION = old;
-})
+});

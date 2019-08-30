@@ -12,7 +12,7 @@ beforeAll(() => {
 });
 afterAll(() => {
     createProject.GITIGNORE_FILE = '.gitignore';
-})
+});
 
 test('createProject accepts a visitor object', async () => {
     await createProject({
