@@ -1,113 +1,56 @@
-
-<!-- TODO: This topic is part of Buildpack reference and should go under packages/pwa-devdocs/src/pwa-buildpack/reference/configure-webpack when it's done -->
-
 ---
-title: createProject
+title: create-project
 ---
 
-A utility function that generates a Webpack configuration object suited to your PWA and its dependencies.
+The `create-project` command is a buildpack CLI subcommand which creates a fresh new PWA Studio app in a new folder, to help get started with a new project.
 
-Import and call `configureWebpack(options)` in your project's `webpack.config.js` file.
-The generated configuration object tells Webpack how to process the PWA source code and generate bundles.
-It's a [complete Webpack configuration object](https://webpack.js.org/configuration/), ready for immediate use, but you can also modify it in your `webpack.config.js` before returning it out of your own configure function.
+It has several arguments and flags, so it is less user-friendly than `npm init @magento/pwa`, but it's publicly available for third-party automation tools to use&mdash; in fact, `@npm init @magento/pwa` calls `buildpack create-project` after you've filled out the prompts!
 
-## API
 
-### `configureWebpack(options)`
+Usage example with `npx`:
 
-#### Options
+```sh
+npx @magento/pwa-buildpack create-project ./new-pwa \
+  --name @magezilla/new-pwa \
+  --template venia-concept \
+  --backend-url https://local.magento \
+  --author MageZilla
+```
 
-| Name | Type | Default | Description
-| ---- | ---- | ------- | --------------
-| context | String | | _Required._ The path of the project root directory.
-| vendor | String[] | | A list of module names to force Webpack to load up-front in a "commons" bundle. Limit this list to strictly necessary dependencies, required by most or all modules.
-| special | Object | | A map of module names to collections of flags. `configureWebpack()` will set the loaders and plugins to treat code from these modules in a "special" way, according to the flags described below.
+This command creates a brand new project in the `./new-pwa` folder, with the package metadata and `.env` file customized to your specifications.
+It also installs the package dependencies, including the Venia, Peregrine and Buildpack libraries you'll use to build your app!
 
-#### Special Flags
+This gives you a way to start a long-running project without forking the PWA Studio codebase, while still tracking and optionally updating to new PWA Studio releases.
 
-By default, Webpack treats the source code of your project very differently than the dependency code.
-Webpack does so because public NPM modules are not reliably compatible with advanced JavaScript features.
-Normally, developers get around this by customizing the Webpack configuration rules.
-`configureWebpack` offers a simpler API: for each module you want to treat specially, add one of these named flags.
-It will adjust Webpack configuration to run that module and its files through additional build steps.
+## Running the command
 
-| Name | Description
-| ---- | -----------
-| `esModules` | Set `true` to process `.js` files from the named module as ES Modules. This allows Webpack to use advanced optimizations on them, but it may fail if the module contains noncompliant code.
-| `cssModules` | Set `true` to process `.css` files from the named module as CSS Modules. This allows Webpack to maintain a separate namespace for every CSS Module, even modules inside dependencies. This prevents style collisions between sibling modules, but it may fail if the module does not actually use CSS Module patterns.
-| `graphqlQueries` | Set `true` to look for `.graphql` files in the dependency and precompile them for better performance. All GraphQL query files in all modules will appear in the GraphQL playground, so this setting allows you to choose which dependencies have queries you want to debug.
-| `rootComponents` | Set `true` to look for RootComponent files in the `src/RootComponents` or `RootComponents` subdirectories of this module. This allows a third-party dependency to provide RootComponents to your app automatically, but it may slow down the build if you add too many modules that don't have RootComponents.
-| `upward` | Set `true` to look for an `upward.yml` file in the root of this module directory, and **merge it with the project's root `upward.yml` file. This enables third-party dependencies to contribute to UPWARD behavior, but it may cause collisions or merge problems if the UPWARD files contradict each other.
+The first argument must be the directory in which to create the starter project.
+If the directory does not exist, it will be created. If the directory is not empty, some files may be overwritten.
+The directory can be the current directory `.`, which is the default if no first argument is passed.
 
-**Return:**
+We recommend against installing Buildpack globally on your development system, because you may risk incompatible versions between a product version and the global version.
+Instead, use the `npx` tool to download the current version and execute it in one command:
 
-A [Promise] configuration type for webpack.
+```sh
+npx @magento/pwa-buildpack create-project . [flags]
+```
+
+This is a little more wordy and runs a little more slowly sometimes, but it prevents possible future incompatibilities.
+
+## Command flags
+
+These flags can come in any order after `buildpack create-project <directory>`.
+You can run `npx @magento/pwa-buildpack create-project --help` to see these.
+
+| Name             | Description
+| ---------------- | -------------------- |
+| `--template`     | Name of the template to use to create the starter kit. Can be an NPM package name or a directory name. **Currently only `venia-concept` is supported.** |
+| `--backend-url`  | URL of the backing Magento instance to use for running this store in developer mode. Will be stored in `.env`. |
+| `--name`         | Name for the `package.json` `"name"` field. Must be a legal NPM package name. Defaults to directory name. |
+| `--author`       | Text for the `package.json` `"author"` field. Can be a personal name, or a company/organizational name, and can optionally include an email address in angle brackets. |
+| `--install`      | After creating the project, install its dependencies so it's ready to go. Defaults `true`. Will install the dependencies with the chosen NPM client. |
+|  `--npm-client`  | NPM client you will be using to manage this repository. Both `npm` (the default) and `yarn` are supported. |
 
 {: .bs-callout .bs-callout-info}
 **Note:**
-`configureWebpack` is asynchronous.
-Webpack accepts a Promise for a configuration, so you can return the result of
-`configureWebpack` directly out of the exported function in `webpack.config.js`.
-If you want to modify the configuration, you'll need to `await` it.
-
-## Example
-
-The following example is taken from `packages/venia-concept/webpack.config.js`.
-It represents a typical setup using `configureWebpack` to generate Webpack config.
-It also demonstrates that `configureWebpack` returns a recognizable Webpack object, which you can modify.
-
-```js
-const { configureWebpack } = require('@magento/pwa-buildpack');
-
-module.exports = async env => {
-    const config = await configureWebpack({
-        context: __dirname,
-        vendor: [
-            'apollo-cache-inmemory',
-            'apollo-cache-persist',
-            'apollo-client',
-            'apollo-link-context',
-            'apollo-link-http',
-            'informed',
-            'react',
-            'react-apollo',
-            'react-dom',
-            'react-feather',
-            'react-redux',
-            'react-router-dom',
-            'redux',
-            'redux-actions',
-            'redux-thunk'
-        ],
-        special: {
-            // Treat code originating in the `@magento/peregrine` module
-            // as ES Modules, just like the project source itself.
-            '@magento/peregrine': {
-                esModules: true
-            }
-            // Treat code originating in the `@magento/venia-ui` as though
-            // it uses ES Modules, CSS Modules, GraphQL queries, RootComponents,
-            // and UPWARD definitions. This is the right set of flags for a UI
-            // library that makes up the bulk of your project.
-            '@magento/venia-ui': {
-                cssModules: true,
-                esModules: true,
-                graphqlQueries: true,
-                rootComponents: true,
-                upward: true
-            }
-        },
-        env
-    });
-
-    // configureWebpack() returns a regular Webpack configuration object.
-    // You can customize the build by mutating the object here, as in
-    // this example:
-    config.module.noParse = [/braintree\-web\-drop\-in/];
-    // Since it's a regular Webpack configuration, the object supports the
-    // `module.noParse` option in Webpack, documented here:
-    // https://webpack.js.org/configuration/module/#modulenoparse
-
-    return config;
-};
-```
+This command should be used only in a development environment and never as part of a production deployment process.
