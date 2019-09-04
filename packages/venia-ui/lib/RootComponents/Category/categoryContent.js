@@ -14,7 +14,7 @@ const CategoryContent = props => {
     const filters = data ? data.products.filters : null;
     const items = data ? data.products.items : null;
     const title = data ? data.category.name : null;
-    const titleContent = title ? `${title} - Venia` : 'Venia';
+    const titleContent = title ? `${title} ${STORE_NAME}` : STORE_NAME;
 
     const header = filters ? (
         <div className={classes.headerButtons}>
